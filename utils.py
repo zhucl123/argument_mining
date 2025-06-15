@@ -1,7 +1,3 @@
-"""Utils tools.
-
-Author: Yixu GAO yxgao19@fudan.edu.cn
-"""
 import logging
 import os
 from collections import OrderedDict

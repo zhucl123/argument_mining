@@ -1,12 +1,3 @@
-"""Separate train and valid set for train file.
-
-Author: Yixu GAO yxgao19@fudan.edu.cn
-
-Usage:
-    python prepare.py --train_in 'data/SMP-CAIL2020-train.csv' \
-                      --train_out 'data/train.csv' \
-                      --valid_out 'data/valid.csv'
-"""
 import fire
 import pandas as pd
 

@@ -1,37 +1,3 @@
-"""Data processor for SMP-CAIL2020-Argmine.
-
-Author: Yixu GAO (yxgao19@fudan.edu.cn)
-
-In data file, each line contains 1 sc sentence and 5 bc sentences.
-The data processor convert each line into 5 samples,
-each sample with 1 sc sentence and 1 bc sentence.
-
-Usage:
-1. Tokenizer (used for RNN model):
-    from data import Tokenizer
-    vocab_file = 'vocab.txt'
-    sentence = '我饿了，想吃东西了。'
-    tokenizer = Tokenizer(vocab_file)
-    tokens = tokenizer.tokenize(sentence)
-    # ['我', '饿', '了', '，', '想', '吃', '东西', '了', '。']
-    ids = tokenizer.convert_tokens_to_ids(tokens)
-2. Data:
-    from data import Data
-    # For training, load train and valid set
-    # For BERT model
-    data = Data('model/bert/vocab.txt', model_type='bert')
-    datasets = data.load_train_and_valid_files(
-        'SMP-CAIL2020-train.csv', 'SMP-CAIL2020-valid.csv')
-    train_set, valid_set_train, valid_set_valid = datasets
-    # For RNN model
-    data = Data('model/rnn/vocab.txt', model_type='rnn')
-    datasets = data.load_all_files(
-        'SMP-CAIL2020-train.csv', 'SMP-CAIL2020-valid.csv')
-    train_set, valid_set_train, valid_set_valid = datasets
-    # For testing, load test set
-    data = Data('model/bert/vocab.txt', model_type='bert')
-    test_set = data.load_file('SMP-CAIL2020-test.csv', train=False)
-"""
 from typing import List
 import jieba
 import torch

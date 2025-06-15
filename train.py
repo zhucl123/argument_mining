@@ -1,12 +1,3 @@
-"""Training file for SMP-CAIL2020-Argmine.
-
-Author: Yixu GAO yxgao19@fudan.edu.cn
-
-Usage:
-    python train.py --config_file 'config/bert_config.json'
-    CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.launch train.py \
-        --config_file 'config/rnn_config.json'
-"""
 from typing import Dict
 import argparse
 import json
@@ -27,7 +18,6 @@ from data import Data
 from evaluate import evaluate, calculate_accuracy_f1, get_labels_from_file
 from model import BertForClassification, BertClassifierv2, BertClassifierv3, BertClassifierv4
 from utils import get_csv_logger, get_path
-from vocab import build_vocab
 from transformers import AutoTokenizer
 # from plt import pic
 

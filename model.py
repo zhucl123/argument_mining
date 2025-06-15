@@ -1,9 +1,3 @@
-"""BERT and RNN model for sentence pair classification.
-
-Author: Yixu GAO (yxgao19@fudan.edu.cn)
-
-Used for SMP-CAIL2020-Argmine.
-"""
 import torch
 
 from torch import nn

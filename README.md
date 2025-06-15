@@ -52,6 +52,10 @@ python train.py --config_file 'config/bert_config.json'
 - **来源**：[中国法律智能挑战赛 CAIL2020]
 - **任务目标**：识别原告诉称与被告辩称间的矛盾关系（二分类）
 
+## 代码框架说明
+
+来自https://github.com/gaoyixu/CAIL2020-Argument-Mining
+
 | 作者   | 联系方式              |
 |:--------:|:----------------------:|
 | ZCL  | 202320037@uibe.edu.cn |
