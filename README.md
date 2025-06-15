@@ -64,6 +64,6 @@ python train.py --config_file 'config/bert_config.json'
 | 作者   | 联系方式              |
 |:--------:|:----------------------:|
 | ZCL  | 202320037@uibe.edu.cn |
-| ZHB  | -  |
-| WYH  | -  |
+| ZHB  | 2624678993@qq.com |
+| WYH  | 2032681050@qq.com |
 Copyright UIBE 法学院 信息学院|

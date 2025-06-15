@@ -51,7 +51,7 @@ class BertClassifierv2(nn.Module):
 
         # 词对齐相关组件
         self.alignment_projector = nn.Sequential(
-            nn.Linear(hidden_size, 256),
+            nn.Linear(self.hidden_size, 256),
             nn.ReLU(),
             nn.Dropout(config.dropout),
             nn.Linear(256, 128)
@@ -59,14 +59,14 @@ class BertClassifierv2(nn.Module):
         
         # 对齐注意力机制
         self.cross_attention = nn.MultiheadAttention(
-            embed_dim=hidden_size,
+            embed_dim=self.hidden_size,
             num_heads=8,
             dropout=config.dropout
         )
         
         # 更新特征融合层的输入维度
         self.feature_fusion = nn.Sequential(
-            nn.Linear(256 * 5 + 128, hidden_size),  # 增加对齐特征维度
+            nn.Linear(256 * 5 + 128, self.hidden_size),  # 增加对齐特征维度
             nn.ReLU(),
             nn.Dropout(config.dropout),
             nn.Tanh()
@@ -107,8 +107,8 @@ class BertClassifierv2(nn.Module):
         self.dropout = nn.Dropout(config.dropout)
         
         # 动作词和否定词的词汇表（可以根据需要扩展）
-        self.action_words = get_vocab('verb.txt')
-        self.negation_words = {'不', '没', '没有', '无', '勿', '非', '未', '否'}
+        # self.action_words = get_vocab('verb.txt')
+        # self.negation_words = {'不', '没', '没有', '无', '勿', '非', '未', '否'}
     
     def get_word_mask(self, input_ids, tokenizer, word_set):
         """获取特定词汇的mask"""
