@@ -29,7 +29,7 @@
     ![模型设计](images/model.png)
 - **激活函数**：
   - 使用了TeLU作为MLP中的激活函数，增强了语义提取能力
-  
+
   $$ 
   \mathrm{TeLU}(x) = x \cdot \tanh\left(e^x\right) 
   $$
@@ -58,6 +58,8 @@ python train.py --config_file 'config/bert_config.json'
 ## 代码框架说明
 
 来自https://github.com/gaoyixu/CAIL2020-Argument-Mining
+
+## 作者
 
 | 作者   | 联系方式              |
 |:--------:|:----------------------:|
