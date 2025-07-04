@@ -1,3 +1,9 @@
+"""
+    python train.py --config_file 'config/bert_config.json'
+    python train.py --config_file 'config/rnn_config.json'
+    CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.launch train.py \
+        --config_file 'config/rnn_config.json'
+"""
 from typing import Dict
 import argparse
 import json
@@ -16,14 +22,16 @@ from transformers.optimization import (
 from torch.optim import AdamW
 from data import Data
 from evaluate import evaluate, calculate_accuracy_f1, get_labels_from_file
-from model import BertForClassification, BertClassifierv2, BertClassifierv3, BertClassifierv4
+from model import BertForClassification, BertClassifierv2, BertClassifierv3, BertClassifierv4, RnnForSentencePairClassification
 from utils import get_csv_logger, get_path
+from vocab import build_vocab
 from transformers import AutoTokenizer
 # from plt import pic
 
 
 MODEL_MAP = {
-    'bert': BertClassifierv4
+    'bert': BertClassifierv4,
+    'rnn': RnnForSentencePairClassification
 }
 
 import torch

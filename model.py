@@ -1,3 +1,9 @@
+"""BERT and RNN model for sentence pair classification.
+
+Author: Yixu GAO (yxgao19@fudan.edu.cn)
+
+Used for SMP-CAIL2020-Argmine.
+"""
 import torch
 
 from torch import nn
@@ -51,7 +57,7 @@ class BertClassifierv2(nn.Module):
 
         # 词对齐相关组件
         self.alignment_projector = nn.Sequential(
-            nn.Linear(self.hidden_size, 256),
+            nn.Linear(hidden_size, 256),
             nn.ReLU(),
             nn.Dropout(config.dropout),
             nn.Linear(256, 128)
@@ -59,14 +65,14 @@ class BertClassifierv2(nn.Module):
         
         # 对齐注意力机制
         self.cross_attention = nn.MultiheadAttention(
-            embed_dim=self.hidden_size,
+            embed_dim=hidden_size,
             num_heads=8,
             dropout=config.dropout
         )
         
         # 更新特征融合层的输入维度
         self.feature_fusion = nn.Sequential(
-            nn.Linear(256 * 5 + 128, self.hidden_size),  # 增加对齐特征维度
+            nn.Linear(256 * 5 + 128, hidden_size),  # 增加对齐特征维度
             nn.ReLU(),
             nn.Dropout(config.dropout),
             nn.Tanh()
@@ -107,8 +113,8 @@ class BertClassifierv2(nn.Module):
         self.dropout = nn.Dropout(config.dropout)
         
         # 动作词和否定词的词汇表（可以根据需要扩展）
-        # self.action_words = get_vocab('verb.txt')
-        # self.negation_words = {'不', '没', '没有', '无', '勿', '非', '未', '否'}
+        self.action_words = get_vocab('verb.txt')
+        self.negation_words = {'不', '没', '没有', '无', '勿', '非', '未', '否'}
     
     def get_word_mask(self, input_ids, tokenizer, word_set):
         """获取特定词汇的mask"""
@@ -1040,4 +1046,191 @@ class BertClassifierv5(nn.Module):
         
         logits = self.classifier(combined_features)
         return logits
+
+import numpy as np
+from textrank4zh import TextRank4Sentence
+
+# class RnnForSentencePairClassification(nn.Module):
+#     """Unidirectional GRU model for sentences pair classification.
+#     2 sentences use the same encoder and concat to a linear model.
+#     """
+#     def __init__(self, config):
+#         """Initialize the model with config dict.
+
+#         Args:
+#             config: python dict must contains the attributes below:
+#                 config.vocab_size: vocab size
+#                 config.hidden_size: RNN hidden size and embedding dim
+#                 config.num_classes: int, e.g. 2
+#                 config.dropout: float between 0 and 1
+#         """
+#         super().__init__()
+#         self.embedding = nn.Embedding(
+#             config.vocab_size, config.hidden_size, padding_idx=0)
+#         self.rnn = nn.GRU(
+#             config.hidden_size, hidden_size=config.hidden_size,
+#             bidirectional=False, batch_first=True)
+#         self.linear = nn.Linear(config.hidden_size * 2, config.num_classes)
+#         self.dropout = nn.Dropout(config.dropout)
+#         self.num_classes = config.num_classes
+
+#     def forward(self, s1_ids, s2_ids, s1_lengths, s2_lengths):
+#         """Forward inputs and get logits.
+
+#         Args:
+#             s1_ids: (batch_size, max_seq_len)
+#             s2_ids: (batch_size, max_seq_len)
+#             s1_lengths: (batch_size)
+#             s2_lengths: (batch_size)
+
+#         Returns:
+#             logits: (batch_size, num_classes)
+#         """
+#         batch_size = s1_ids.shape[0]
+#         # ids: (batch_size, max_seq_len)
+#         s1_embed = self.embedding(s1_ids)
+#         s2_embed = self.embedding(s2_ids)
+#         # embed: (batch_size, max_seq_len, hidden_size)
+#         s1_lengths = s1_lengths.cpu()
+#         s2_lengths = s2_lengths.cpu()
+#         s1_packed: PackedSequence = pack_padded_sequence(
+#             s1_embed, s1_lengths, batch_first=True, enforce_sorted=False)
+#         s2_packed: PackedSequence = pack_padded_sequence(
+#             s2_embed, s2_lengths, batch_first=True, enforce_sorted=False)
+#         # packed: (sum(lengths), hidden_size)
+#         self.rnn.flatten_parameters()
+#         _, s1_hidden = self.rnn(s1_packed)
+#         _, s2_hidden = self.rnn(s2_packed)
+#         s1_hidden = s1_hidden.view(batch_size, -1)
+#         s2_hidden = s2_hidden.view(batch_size, -1)
+#         hidden = torch.cat([s1_hidden, s2_hidden], dim=-1)
+#         hidden = self.linear(hidden).view(-1, self.num_classes)
+#         hidden = self.dropout(hidden)
+#         logits = nn.functional.softmax(hidden, dim=-1)
+#         # logits: (batch_size, num_classes)
+#         return logits
+class TeLU(nn.Module):
+    def __init__(self):
+        super(TeLU, self).__init__()
+    
+    def forward(self, x):
+        return x * torch.tanh(torch.exp(x))
+    
+class RnnForSentencePairClassification(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.embedding = nn.Embedding(
+            config.vocab_size, config.hidden_size, padding_idx=0)
+
+        self.bert = AutoModel.from_pretrained(config.bert_model_path)
+        self.tokenizer = AutoTokenizer.from_pretrained(config.bert_model_path)
+        for param in self.bert.parameters():
+            param.requires_grad = False
         
+        # 改为双向LSTM
+        self.rnn1 = nn.LSTM(
+            768, 
+            hidden_size=config.hidden_size,
+            bidirectional=True,  # 设置为双向
+            batch_first=True)
+        self.rnn2 = nn.LSTM(
+            768, 
+            hidden_size=config.hidden_size,
+            bidirectional=True,  # 设置为双向
+            batch_first=True)
+        
+        # 双向LSTM的输出维度是 hidden_size * 2
+        # 两个句子拼接后是 hidden_size * 2 * 2 = hidden_size * 4
+        self.linear = nn.Sequential(
+            # nn.Dropout(config.dropout),
+            nn.LayerNorm(config.hidden_size * 4),
+            TeLU(),
+            nn.Linear(config.hidden_size * 4, 2),
+            
+            # nn.Linear(32, config.num_classes)
+        )
+
+        self.hidden_size = config.hidden_size
+
+    def extract_features(self, input_ids, attention_mask):
+        """从BERT输出中提取三种特征并合并"""
+        # 通过BERT获取句向量表示
+        outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
+        hidden_states = outputs.last_hidden_state  # [batch_size, seq_len, hidden_size]
+        
+        # 1. CLS特征
+        cls_feature = hidden_states[:, 0, :]  # [batch_size, hidden_size]
+        
+        # 2. 平均池化
+        input_mask_expanded = attention_mask.unsqueeze(-1).expand(hidden_states.size()).float()
+        sum_embeddings = torch.sum(hidden_states * input_mask_expanded, 1)
+        sum_mask = torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+        mean_feature = sum_embeddings / sum_mask  # [batch_size, hidden_size]
+        
+        # 3. 最大池化
+        input_mask_expanded = attention_mask.unsqueeze(-1).expand(hidden_states.size())
+        masked_hidden = hidden_states.masked_fill(input_mask_expanded == 0, -1e9)
+        max_feature = torch.max(masked_hidden, dim=1)[0]  # [batch_size, hidden_size]
+        
+        # 合并三种特征：相加
+        merged_feature = cls_feature + mean_feature + max_feature
+        return merged_feature
+    
+    def forward(self, s1_ids, s2_ids, s1_lengths, s2_lengths):
+
+        batch_size = s1_ids.shape[0]
+        
+        # 嵌入
+        # s1_embed = self.embedding(s1_ids)
+        # s2_embed = self.embedding(s2_ids)
+        
+        # pack sequences
+        # s1_lengths = s1_lengths.cpu()
+        # s2_lengths = s2_lengths.cpu()
+        # s1_packed = pack_padded_sequence(
+        #     s1_embed, s1_lengths, batch_first=True, enforce_sorted=False)
+        # s2_packed = pack_padded_sequence(
+        #     s2_embed, s2_lengths, batch_first=True, enforce_sorted=False)
+        
+        # 根据序列长度生成attention mask
+        s1_max_len = s1_ids.shape[1]
+        s2_max_len = s2_ids.shape[1]
+        
+        s1_attention_mask = torch.zeros_like(s1_ids, dtype=torch.long)
+        s2_attention_mask = torch.zeros_like(s2_ids, dtype=torch.long)
+        
+        for i in range(batch_size):
+            s1_attention_mask[i, :s1_lengths[i]] = 1
+            s2_attention_mask[i, :s2_lengths[i]] = 1
+        
+        # 提取特征
+        s1_feature = self.extract_features(s1_ids, s1_attention_mask)
+        s2_feature = self.extract_features(s2_ids, s2_attention_mask)
+        
+        # 重塑特征以适应LSTM输入
+        s1_feature = s1_feature.unsqueeze(1)  # [batch_size, 1, hidden_size]
+        s2_feature = s2_feature.unsqueeze(1)
+        
+        # 通过双向LSTM
+        self.rnn1.flatten_parameters()
+        self.rnn2.flatten_parameters()
+        _, (s1_hidden, _) = self.rnn1(s1_feature)  # hidden: [2, batch_size, hidden_size]
+        _, (s2_hidden, _) = self.rnn2(s2_feature)
+        
+        
+        # LSTM前向传播
+        # self.rnn1.flatten_parameters()
+        # self.rnn2.flatten_parameters()
+        # _, (s1_hidden, _) = self.rnn1(s1_packed)  # hidden: (2, batch_size, hidden_size)
+        # _, (s2_hidden, _) = self.rnn2(s2_packed)
+        
+        # 双向LSTM的hidden state需要合并前向和后向
+        # s1_hidden: (2, batch_size, hidden_size) -> (batch_size, hidden_size * 2)
+        s1_hidden = s1_hidden.transpose(0, 1).contiguous().view(batch_size, -1)
+        s2_hidden = s2_hidden.transpose(0, 1).contiguous().view(batch_size, -1)
+        
+        hidden = torch.cat([s1_hidden, s2_hidden], dim=-1)
+        # hidden = self.dropout(hidden)
+        logits = self.linear(hidden)
+        
+        return logits
